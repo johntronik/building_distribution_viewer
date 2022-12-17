@@ -1,25 +1,59 @@
-import streamlit as st
 from PIL import Image
+import pandas as pd
+import numpy as np
+import streamlit as st
+import matplotlib.pyplot as plt
+import japanize_matplotlib
+import streamlit as st
+
+
+df = pd.read_csv('data/df.csv')
+
+def plot_chart(city:str):
+    N = 40
+    bottom = 1
+    width = (2*np.pi) / N
+    theta = np.linspace(0.0, 2 * np.pi, N, endpoint=False)
+    fig, ax = plt.subplots(1,1,figsize=(5,5), subplot_kw={'projection': 'polar'})
+
+    # prepare data
+    radii = np.array([float(t) for t in df.query('name==@city')['radii'].values[0][1:-1].split(',')])
+    # plot
+    ax.set_title(city)
+    bars = ax.bar(theta, radii, width=width, bottom=bottom)
+
+    # x-labels setting
+    ax.set_xlim([-np.pi, np.pi])
+    ax.set_xticks(np.linspace(-np.pi, np.pi, 9)[1:])
+    ax.set_xticklabels(["SW", "W", "NW", "N", "NE", "E", "SE", "S",])
+    ax.set_theta_direction(-1)
+    ax.set_theta_zero_location("N")
+
+    # y-label setting
+    ax.set_yticklabels([])
+
+    # Use custom colors and opacity
+    for r, bar in zip(radii, bars):
+        bar.set_facecolor(plt.cm.jet(r / 10))
+        bar.set_alpha(0.8)
+    return fig
 
 st.set_page_config(layout="wide")
 
-st.markdown('## 都市を集計します')
-ku = st.selectbox('街を選んでください', ['千代田区', '中央区', '港区', '新宿区', ''])
+city = '東京都中央区'
+city = st.selectbox('区を選んでください', df['name'])
 
-left,right = st.columns([1,2])
-with right:
-    if ku=='千代田区':
-        image2 = Image.open('data/map_chiyoda.png')
-    else:
-        image2 = Image.open('data/map_chuo.png')
-    st.image(image2)
-
+left,right = st.columns([1,1.5])
 with left:
-    if ku=='千代田区':
-        image1 = Image.open('data/output_chiyoda.png')
-    else:
-        image1 = Image.open('data/output_chuo.png')
-    st.image(image1)
+    st.pyplot(plot_chart(city))
+with right:
+    df_city = df.query('name==@city')[['lon','lat']]
+    st.map(df_city)
+
+
+st.markdown('## 都市を集計します')
+
+
 
 s = '''---
 ## これなに?

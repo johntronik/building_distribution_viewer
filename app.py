@@ -39,19 +39,19 @@ def plot_chart(city:str):
     return fig
 
 st.set_page_config(layout="wide")
+st.markdown('## 都市を集計します')
 
-city = '東京都中央区'
-city = st.selectbox('区を選んでください', df['name'])
+# city = '東京都中央区'
+city = st.selectbox('街を選んでください', df['name'])
 
-left,right = st.columns([1,1.5])
+left,right = st.columns([1,2])
 with left:
     st.pyplot(plot_chart(city))
 with right:
     df_city = df.query('name==@city')[['lon','lat']]
-    st.map(df_city)
+    st.map(df_city, zoom=14)
 
 
-st.markdown('## 都市を集計します')
 
 
 

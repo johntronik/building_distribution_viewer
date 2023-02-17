@@ -4,7 +4,8 @@ import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
 import japanize_matplotlib
-import streamlit as st
+import pydeck as pdk
+
 
 
 df = pd.read_csv('data/df.csv')
@@ -38,6 +39,22 @@ def plot_chart(city:str):
         bar.set_alpha(0.8)
     return fig
 
+
+def plot_map(city:str):
+    row = df[df['name']==city]
+    code,lat,lon = row[['code', 'lat', 'lon']].values[0]
+    DATA_URL = f"https://raw.githubusercontent.com/niiyz/JapanCityGeoJson/master/geojson/13/{int(code)}.json"
+
+    INITIAL_VIEW_STATE = pdk.ViewState(latitude=lat, longitude=lon, zoom=13, max_zoom=16, pitch=45, bearing=0)
+    geojson = pdk.Layer(
+        "GeoJsonLayer",
+        DATA_URL,
+        opacity=0.1,
+        get_fill_color="[100, 200, 100]",
+    )
+    return pdk.Deck(layers=[geojson], initial_view_state=INITIAL_VIEW_STATE)
+
+
 st.set_page_config(layout="wide")
 st.markdown('## 都市を集計します')
 
@@ -48,8 +65,9 @@ left,right = st.columns([1,2])
 with left:
     st.pyplot(plot_chart(city))
 with right:
-    df_city = df.query('name==@city')[['lon','lat']]
-    st.map(df_city, zoom=14)
+    st.pydeck_chart(plot_map(city))
+    # df_city = df.query('name==@city')[['lon','lat']]
+    # st.map(df_city, zoom=14)
 
 
 

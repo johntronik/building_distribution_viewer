@@ -1,24 +1,26 @@
-from PIL import Image
-import pandas as pd
-import numpy as np
+# Choropleth で色付け
 import streamlit as st
+import numpy as np
+import pandas as pd
+import folium
+from folium.plugins import Draw
+from streamlit_folium import st_folium
 import matplotlib.pyplot as plt
 import japanize_matplotlib
-from streamlit_folium import folium_static
-from folium import Map, Choropleth
+from PIL import Image
+
 st.set_page_config(layout="wide")
 
-@st.cache_data
-def load_df():
-    return pd.read_csv("data/df.csv")
-df = load_df()
 
+df = pd.read_csv('./data/df.csv')
+
+@st.cache_data
 def plot_chart(city: str):
     N = 40
     bottom = 1
     width = (2 * np.pi) / N
     theta = np.linspace(0.0, 2 * np.pi, N, endpoint=False)
-    fig, ax = plt.subplots(1, 1, figsize=(5, 5), subplot_kw={"projection": "polar"})
+    fig, ax = plt.subplots(1, 1, figsize=(3,3), subplot_kw={"projection": "polar"})
 
     # prepare data
     radii = np.array(
@@ -56,34 +58,50 @@ def plot_chart(city: str):
     return fig
 
 
-def plot_map2(DATA_URL:str):
-    m = Map(location=[lat,lon], tiles="cartodbpositron", zoom_start=13)
-    Choropleth(
+st.markdown('緑のアイコンをクリックすると、区の建物の"エントロピー"を計算します')
+
+left, right = st.columns([2, 1])
+with left:
+    m = folium.Map(location=[35.658581, 139.745433], zoom_start=13, tiles="cartodbpositron",)
+    Draw(export=True).add_to(m)
+    fg = folium.FeatureGroup(name="23ku")
+    DATA_URL = "https://raw.githubusercontent.com/niiyz/JapanCityGeoJson/master/geojson/custom/tokyo23.json"
+    folium.Choropleth(
         geo_data=DATA_URL,
         data=df,
-        columns=["code", "1"],
+        columns=["code", "entropy"],
         key_on="properties.N03_007",
-        fill_opacity=0.2,
-        # line_opacity=0.2,
-        # line_color="red",
-        fill_color="PuBuGn",
+        fill_opacity=0.4,
+        line_opacity=0.7,
+        line_color="black",
+        fill_color="OrRd", # BuGn', 'BuPu', 'GnBu', 'OrRd', 'PuBu', 'PuBuGn', 'PuRd', 'RdPu', 'YlGn', 'YlGnBu', 'YlOrBr', and 'YlOrRd'.
+        legend_name="建物のエントロピー"
     ).add_to(m)
-    return m
-
-st.markdown("## 都市を集計します")
-
-# city = '東京都中央区'
-city = st.selectbox("街を選んでください", df["name"])
-row = df[df["name"] == city]
-code, lat, lon = row[["code", "lat", "lon"]].values[0]
-DATA_URL = f"https://raw.githubusercontent.com/niiyz/JapanCityGeoJson/master/geojson/13/{int(code)}.json"
 
 
-left, right = st.columns([1, 2])
-with left:
-    st.pyplot(plot_chart(city))
+    for row in df.itertuples():
+        fg.add_child(
+            folium.Marker(
+                location=[row.lat, row.lon],
+                tooltip=f"{row.name}",
+                icon=folium.Icon(color="green")            
+            )
+        )
+
+    map_output = st_folium(
+        m,
+        feature_group_to_add=fg,
+        returned_objects='last_object_clicked_tooltip',
+        width=1200,
+        height=800,
+    )
+
+    st.markdown(map_output['last_object_clicked_tooltip'])
+    st.markdown(map_output)
+
 with right:
-    folium_static(plot_map2(DATA_URL), width=800, height=600)
+    city = map_output['last_object_clicked_tooltip'] or '東京都港区'
+    st.pyplot(plot_chart(city))
 
 
 s = """---

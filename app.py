@@ -12,7 +12,8 @@ from PIL import Image
 st.set_page_config(layout="wide")
 
 
-df = pd.read_csv('./data/df.csv')
+df = pd.read_csv("./data/df.csv")
+
 
 @st.cache_data
 def plot_chart(city: str):
@@ -20,7 +21,7 @@ def plot_chart(city: str):
     bottom = 1
     width = (2 * np.pi) / N
     theta = np.linspace(0.0, 2 * np.pi, N, endpoint=False)
-    fig, ax = plt.subplots(1, 1, figsize=(3,3), subplot_kw={"projection": "polar"})
+    fig, ax = plt.subplots(1, 1, figsize=(3, 3), subplot_kw={"projection": "polar"})
 
     # prepare data
     radii = np.array(
@@ -58,11 +59,15 @@ def plot_chart(city: str):
     return fig
 
 
-st.markdown('緑のアイコンをクリックすると、区の建物の"エントロピー"を計算します')
+st.markdown('緑のアイコンをクリックすると、区の建物の"エントロピー"を計算して表示します')
 
 left, right = st.columns([2, 1])
 with left:
-    m = folium.Map(location=[35.658581, 139.745433], zoom_start=13, tiles="cartodbpositron",)
+    m = folium.Map(
+        location=[35.658581, 139.745433],
+        zoom_start=13,
+        tiles="cartodbpositron",
+    )
     Draw(export=True).add_to(m)
     fg = folium.FeatureGroup(name="23ku")
     DATA_URL = "https://raw.githubusercontent.com/niiyz/JapanCityGeoJson/master/geojson/custom/tokyo23.json"
@@ -74,33 +79,29 @@ with left:
         fill_opacity=0.4,
         line_opacity=0.7,
         line_color="black",
-        fill_color="OrRd", # BuGn', 'BuPu', 'GnBu', 'OrRd', 'PuBu', 'PuBuGn', 'PuRd', 'RdPu', 'YlGn', 'YlGnBu', 'YlOrBr', and 'YlOrRd'.
-        legend_name="建物のエントロピー"
+        fill_color="OrRd",  # BuGn', 'BuPu', 'GnBu', 'OrRd', 'PuBu', 'PuBuGn', 'PuRd', 'RdPu', 'YlGn', 'YlGnBu', 'YlOrBr', and 'YlOrRd'.
+        legend_name="建物のエントロピー",
     ).add_to(m)
-
 
     for row in df.itertuples():
         fg.add_child(
             folium.Marker(
                 location=[row.lat, row.lon],
                 tooltip=f"{row.name}",
-                icon=folium.Icon(color="green")            
+                icon=folium.Icon(color="green"),
             )
         )
 
     map_output = st_folium(
         m,
         feature_group_to_add=fg,
-        returned_objects='last_object_clicked_tooltip',
+        returned_objects="last_object_clicked_tooltip",
         width=1200,
         height=800,
     )
 
-    st.markdown(map_output['last_object_clicked_tooltip'])
-    st.markdown(map_output)
-
 with right:
-    city = map_output['last_object_clicked_tooltip'] or '東京都港区'
+    city = map_output["last_object_clicked_tooltip"] or "東京都港区"
     st.pyplot(plot_chart(city))
 
 

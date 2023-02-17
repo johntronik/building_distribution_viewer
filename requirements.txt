@@ -4,3 +4,5 @@ streamlit
 Pillow
 japanize_matplotlib
 matplotlib
+streamlit-folium
+folium

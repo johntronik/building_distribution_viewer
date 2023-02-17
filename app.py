@@ -4,21 +4,26 @@ import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
 import japanize_matplotlib
-import pydeck as pdk
+from streamlit_folium import folium_static
+from folium import Map, Choropleth
+st.set_page_config(layout="wide")
 
+@st.cache_data
+def load_df():
+    return pd.read_csv("data/df.csv")
+df = load_df()
 
-
-df = pd.read_csv('data/df.csv')
-
-def plot_chart(city:str):
+def plot_chart(city: str):
     N = 40
     bottom = 1
-    width = (2*np.pi) / N
+    width = (2 * np.pi) / N
     theta = np.linspace(0.0, 2 * np.pi, N, endpoint=False)
-    fig, ax = plt.subplots(1,1,figsize=(5,5), subplot_kw={'projection': 'polar'})
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5), subplot_kw={"projection": "polar"})
 
     # prepare data
-    radii = np.array([float(t) for t in df.query('name==@city')['radii'].values[0][1:-1].split(',')])
+    radii = np.array(
+        [float(t) for t in df.query("name==@city")["radii"].values[0][1:-1].split(",")]
+    )
     # plot
     ax.set_title(city)
     bars = ax.bar(theta, radii, width=width, bottom=bottom)
@@ -26,7 +31,18 @@ def plot_chart(city:str):
     # x-labels setting
     ax.set_xlim([-np.pi, np.pi])
     ax.set_xticks(np.linspace(-np.pi, np.pi, 9)[1:])
-    ax.set_xticklabels(["SW", "W", "NW", "N", "NE", "E", "SE", "S",])
+    ax.set_xticklabels(
+        [
+            "SW",
+            "W",
+            "NW",
+            "N",
+            "NE",
+            "E",
+            "SE",
+            "S",
+        ]
+    )
     ax.set_theta_direction(-1)
     ax.set_theta_zero_location("N")
 
@@ -40,40 +56,37 @@ def plot_chart(city:str):
     return fig
 
 
-def plot_map(city:str):
-    row = df[df['name']==city]
-    code,lat,lon = row[['code', 'lat', 'lon']].values[0]
-    DATA_URL = f"https://raw.githubusercontent.com/niiyz/JapanCityGeoJson/master/geojson/13/{int(code)}.json"
+def plot_map2(DATA_URL:str):
+    m = Map(location=[lat,lon], tiles="cartodbpositron", zoom_start=13)
+    Choropleth(
+        geo_data=DATA_URL,
+        data=df,
+        columns=["code", "1"],
+        key_on="properties.N03_007",
+        fill_opacity=0.2,
+        # line_opacity=0.2,
+        # line_color="red",
+        fill_color="PuBuGn",
+    ).add_to(m)
+    return m
 
-    INITIAL_VIEW_STATE = pdk.ViewState(latitude=lat, longitude=lon, zoom=13, max_zoom=16, pitch=45, bearing=0)
-    geojson = pdk.Layer(
-        "GeoJsonLayer",
-        DATA_URL,
-        opacity=0.1,
-        get_fill_color="[100, 200, 100]",
-    )
-    return pdk.Deck(layers=[geojson], initial_view_state=INITIAL_VIEW_STATE)
-
-
-st.set_page_config(layout="wide")
-st.markdown('## 都市を集計します')
+st.markdown("## 都市を集計します")
 
 # city = '東京都中央区'
-city = st.selectbox('街を選んでください', df['name'])
+city = st.selectbox("街を選んでください", df["name"])
+row = df[df["name"] == city]
+code, lat, lon = row[["code", "lat", "lon"]].values[0]
+DATA_URL = f"https://raw.githubusercontent.com/niiyz/JapanCityGeoJson/master/geojson/13/{int(code)}.json"
 
-left,right = st.columns([1,2])
+
+left, right = st.columns([1, 2])
 with left:
     st.pyplot(plot_chart(city))
 with right:
-    st.pydeck_chart(plot_map(city))
-    # df_city = df.query('name==@city')[['lon','lat']]
-    # st.map(df_city, zoom=14)
+    folium_static(plot_map2(DATA_URL), width=800, height=600)
 
 
-
-
-
-s = '''---
+s = """---
 ## これなに?
 ref: [PLATEAUから街の構造を見る](https://www.estie.jp/blog/entry/2022/08/10/110801)
 
@@ -85,11 +98,11 @@ Geoff Boeingさんの研究に[”Urban spatial order: street network orientatio
 - 具体的には、東京都データのうち bldg のlod0RoofEdgeのデータ(上空から見た建物の形)を読み込みます。
 #### 2. ビルを単純化する
 - たとえば、こういうビルがあります。(PLATEAUの建物ID: 13107-bldg-18762)
-'''
+"""
 
-s1 = '''- そのビルを含む四角形に単純化します。'''
+s1 = """- そのビルを含む四角形に単純化します。"""
 
-s2 = '''
+s2 = """
 - 具体的には、shapelyの minimum_rotated_rectangleを使用しました。
 
 #### 3. 四角形の全ての辺の角度（方角）、長さを計算する
@@ -98,9 +111,9 @@ s2 = '''
 - この時、辺の長さで重み付けしました。大きい建物は、街の印象に対する影響が大きいと思ったためです。
 - NumPyでやりました。
 
-'''
+"""
 st.markdown(s)
-st.image(Image.open('data/raw.png'), width=100)
+st.image(Image.open("data/raw.png"), width=100)
 st.markdown(s1)
-st.image(Image.open('data/mrr.png'), width=100)
+st.image(Image.open("data/mrr.png"), width=100)
 st.markdown(s2)

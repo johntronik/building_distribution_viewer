@@ -1,4 +1,3 @@
-# Choropleth で色付け
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -79,7 +78,7 @@ with left:
         fill_opacity=0.4,
         line_opacity=0.7,
         line_color="black",
-        fill_color="OrRd",  # BuGn', 'BuPu', 'GnBu', 'OrRd', 'PuBu', 'PuBuGn', 'PuRd', 'RdPu', 'YlGn', 'YlGnBu', 'YlOrBr', and 'YlOrRd'.
+        fill_color="OrRd",
         legend_name="建物のエントロピー",
     ).add_to(m)
 
